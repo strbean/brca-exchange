@@ -259,17 +259,95 @@ input:focus {
 /**********     Homepage logo             *********************/
 /**************************************************************/
 
-.logo-block {
+/* .logo-block {
     margin: 80px 0 0 0;
     width: auto;
     text-align: center;
+} */
+.proto3 {
+    height: 300px;
+}
+.proto3 img {
+    max-width: 500px;
+    max-height: 300px;
+    padding-right: 40px;
+    float: left;
 }
 
-@media only screen and (min-width : 768px) {
+.proto3 .slide {
+    height: 300px;
+}
+
+.proto3 .blurb {
+    font-size: 21px;
+    font-weight: 200;
+}
+.proto3 .decorator {
+    padding: 20px;
+    font-size: 30px;
+    opacity: 0.5;
+    cursor: pointer;
+}
+
+.proto3 div.decorator.disabled {
+    opacity: 0.2;
+    cursor: not-allowed;
+}
+
+.proto3 .decorator:hover {
+    opacity: 0.8;
+}
+.logo-block {
+    padding: 10px;
+    overflow: hidden;
+}
+
+.logo-block.proto2 {
+    position: absolute;
+    left: 0px;
+    right: 0px;
+}
+
+.logo-block .marquee {
+    display: block;
+    position: relative;
+    /* width of all marquee items, use inspector to adjust this until items do not wrap */
+    width: 3762px;
+    height: 100px;
+    animation: scrollin 25s linear infinite;
+    padding: 5px;
+}
+
+.logo-block .marquee:hover {
+    animation-play-state: paused;
+}
+
+.logo-block a {
+    /* max-width: 200px; */
+    /* vertical-align: center */
+    float: left;
+    padding-right: 30px;
+}
+.logo-block img {
+    /* max-width: 200px; */
+    height: 100px;
+}
+
+@keyframes scrollin {
+    0% {
+        left: 0px;
+    }
+    100% {
+        /* half marquee width, minus 5px */
+        left: -1876px;
+    }
+}
+
+/* @media only screen and (min-width : 768px) {
     .logo-block {
         margin: 80px 100px;
     }
-}
+} */
 
 .logo-item {
     height: 120px;

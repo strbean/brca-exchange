@@ -25,6 +25,7 @@ var moment = require('moment');
 var brcaLogo = require('./img/BRCA-Exchange-tall-tranparent.png');
 var logos = require('./logos');
 var slugify = require('./slugify');
+var Carousel = require('nuka-carousel');
 
 var content = require('./content');
 var Community = require('./Community');
@@ -32,7 +33,7 @@ var {MailingList} = require('./MailingList');
 
 var databaseKey = require('../databaseKey');
 
-var {Grid, Col, Row, Table, Button, Modal} = require('react-bootstrap');
+var {Grid, Col, Row, Table, Button, Modal, Glyphicon} = require('react-bootstrap');
 
 var {VariantTable, ResearchVariantTable, researchModeColumns, columns} = require('./VariantTable');
 var {Signup} = require('./Signup');
@@ -109,12 +110,44 @@ var Home = React.createClass({
     render: function() {
         var {suggestions} = this.props;
         var logoItems = _.map(logos, ({id, logo, url}) => (
-            <Col key={id} lg={4} md={6} xs={12} className="logo-item">
                 <a href={url}>
                     <img id={id} src={logo} alt={id + ' logo'} />
                 </a>
-            </Col>
         ));
+        var logoSlides = _.map(logos, ({id, logo, url}) => (
+                <a href={url}>
+                    <div className='slide'>
+                        <img id={id} src={logo} alt={id + ' logo'} />
+                        <div className='blurb'>
+                            Lorem ipsum assembly dolor sit amet, elit tristique sodales vitae urna. Nunc fringilla lacus tristique. Adipiscing atcg recombinant. <br/>
+                            Assembly quisque lectus non. Dolor accession phasellus lorem libero convallis cras fringilla at accumsan mi sequence assembly ipsum lacus. Cras genome sem ut ut ac at mi accession vehicula.
+                        </div>
+                    </div>
+                </a>
+        ));
+
+        var carouselDecorators = [{
+            component: React.createClass({
+                render() {
+                    return (<div className={'decorator' + (this.disabled() ? ' disabled': '')} onClick={this.props.previousSlide}>
+                        <Glyphicon glyph="chevron-left" />
+                    </div>);
+                },
+                disabled() { return this.props.currentSlide === 0 && !this.props.wrapAround; }
+            }),
+            position: 'CenterLeft',
+        }, {
+            component: React.createClass({
+                render() {
+                    return (<div className={'decorator' + (this.disabled() ? ' disabled' : '')} onClick={this.props.nextSlide}>
+                        <Glyphicon glyph="chevron-right" />
+                    </div>);
+                },
+                disabled() { return this.props.currentSlide + this.props.slidesToScroll >= this.props.slideCount && !this.props.wrapAround; }
+            }),
+            position: 'CenterRight',
+        }, Carousel.getDefaultProps().decorators[2]
+        ];
         return (
             <Grid id="main-grid" className='home'>
                 <Row>
@@ -135,9 +168,29 @@ var Home = React.createClass({
                         <iframe src="https://player.vimeo.com/video/199396428" className="vimeo-video" frameBorder="0" webkitallowfullscreen mozallowfullscreen allowFullScreen></iframe>
                     </Col>
                 </Row>
-                <Row className="logo-block">
-                    {logoItems}
+                <Row><br/><br/></Row>
+                <Row className="proto3">
+                    <Carousel className="carousel" decorators={carouselDecorators} framePadding="0px 60px" autoplay={true} autoplayInterval={6000} wrapAround={true}>
+                        {logoSlides}
+                    </Carousel>
                 </Row>
+                <Row className="logo-block proto1">
+                    <div className="marquee">
+                        {logoItems}
+                        {logoItems}
+                    </div>
+                </Row>
+                <Row className="logo-block proto2">
+                    <div className="marquee">
+                        {logoItems}
+                        {logoItems}
+                    </div>
+                </Row>
+                <div style={{position: 'fixed', top: 130, left: 0, zIndex: 99999, backgroundColor: 'white'}}>
+                    <button onClick={() => document.querySelector('.proto3').classList.toggle('hide')}>Prototype A</button>
+                    <button onClick={() => document.querySelector('.proto1').classList.toggle('hide')}>Prototype B</button>
+                    <button onClick={() => document.querySelector('.proto2').classList.toggle('hide')}>Prototype C</button>
+                </div>
             </Grid>
         );
     }
