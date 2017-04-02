@@ -136,7 +136,10 @@ var Home = React.createClass({
                     </Col>
                 </Row>
                 <Row className="logo-block">
-                    {logoItems}
+                    <div className="marquee">
+                        {logoItems}
+                        {logoItems}
+                    </div>
                 </Row>
             </Grid>
         );
