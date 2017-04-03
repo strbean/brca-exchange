@@ -13,14 +13,24 @@ module.exports = [
         url: 'http://brcaexchange.org'
     },
     {
+        id: 'UCSC-Genomics',
+        logo: require('./img/UC-Santa-Cruz-Genomics-Inst_090314.png'),
+        url: 'http://ucscgenomics.soe.ucsc.edu/'
+    },
+    {
         id: 'human-variome-project',
         logo: require('./img/hvp_logo.png'),
         url: 'http://www.humanvariomeproject.org'
     },
     {
         id: 'ENIGMA',
-        logo: require('./img/enigma_logo.png'),
+        logo: require('./img/enigma_logo.jpeg'),
         url: 'http://enigmaconsortium.org'
+    },
+    {
+        id: 'ETHZurich',
+        logo: require('./img/ETHZurich.png'),
+        url: 'http://www.ethz.ch/en.html'
     },
     {
         id: 'ClinGen',
@@ -29,7 +39,7 @@ module.exports = [
     },
     {
         id: 'LOVD',
-        logo: require('./img/lovd_logo.jpg'),
+        logo: require('./img/LOVD-hires.png'),
         url: 'http://www.lovd.nl/',
     }
 ];

@@ -293,7 +293,7 @@ input:focus {
     display: block;
     position: relative;
     /* width of all marquee items, use inspector to adjust this until items do not wrap */
-    width: 6980px;
+    width: 11206px;
     height: 100px;
     animation: scrollin 60s linear infinite;
     padding: 5px;
@@ -307,7 +307,7 @@ input:focus {
     /* max-width: 200px; */
     /* vertical-align: center */
     float: left;
-    padding-right: 30px;
+    padding-right: 80px;
 }
 .logo-block img {
     /* max-width: 200px; */
@@ -320,32 +320,8 @@ input:focus {
     }
     100% {
         /* half marquee width, minus 5px */
-        left: -3485px;
+        left: -5598px;
     }
-}
-
-#BRCA-Exchange {
-    padding: 10px 0px;
-}
-
-#GA4GH {
-    padding: 0px 10px;
-}
-
-#human-variome-project {
-    padding: 5px 0px;
-}
-
-#ClinGen {
-    padding: 5px 0px;
-}
-
-#ENIGMA {
-    padding: 0px;
-}
-
-#CIMBA {
-    padding: 0px 10px 0px;
 }
 
 /**************************************************************/
