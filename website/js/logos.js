@@ -28,8 +28,8 @@ module.exports = [
         url: 'http://enigmaconsortium.org'
     },
     {
-        id: 'ETHZurich',
-        logo: require('./img/ETHZurich.png'),
+        id: 'ETHzurich',
+        logo: require('./img/ETHzurich.png'),
         url: 'http://www.ethz.ch/en.html'
     },
     {
