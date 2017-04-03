@@ -109,11 +109,9 @@ var Home = React.createClass({
     render: function() {
         var {suggestions} = this.props;
         var logoItems = _.map(logos, ({id, logo, url}) => (
-            <Col key={id} lg={4} md={6} xs={12} className="logo-item">
-                <a href={url}>
-                    <img id={id} src={logo} alt={id + ' logo'} />
-                </a>
-            </Col>
+            <a href={url}>
+                <img id={id} src={logo} alt={id + ' logo'} />
+            </a>
         ));
         return (
             <Grid id="main-grid" className='home'>
@@ -141,6 +139,7 @@ var Home = React.createClass({
                         {logoItems}
                     </div>
                 </Row>
+                <Row style={{height: 200}} ></Row>
             </Grid>
         );
     }

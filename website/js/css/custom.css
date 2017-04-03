@@ -260,15 +260,9 @@ input:focus {
 /**************************************************************/
 
 .logo-block {
-    margin: 80px 0 0 0;
+    margin: 0 0 0 0;
     width: auto;
     text-align: center;
-}
-
-@media only screen and (min-width : 768px) {
-    .logo-block {
-        margin: 80px 100px;
-    }
 }
 
 .logo-item {
@@ -285,6 +279,49 @@ input:focus {
     max-width: 300px;
     width: auto;
     vertical-align: middle;
+}
+
+.logo-block {
+    padding: 10px;
+    overflow: hidden;
+    position: absolute;
+    left: 0px;
+    right: 0px;
+}
+
+.logo-block .marquee {
+    display: block;
+    position: relative;
+    /* width of all marquee items, use inspector to adjust this until items do not wrap */
+    width: 6980px;
+    height: 100px;
+    animation: scrollin 60s linear infinite;
+    padding: 5px;
+}
+
+.logo-block .marquee:hover {
+    animation-play-state: paused;
+}
+
+.logo-block a {
+    /* max-width: 200px; */
+    /* vertical-align: center */
+    float: left;
+    padding-right: 30px;
+}
+.logo-block img {
+    /* max-width: 200px; */
+    height: 250px;
+}
+
+@keyframes scrollin {
+    0% {
+        left: 0px;
+    }
+    100% {
+        /* half marquee width, minus 5px */
+        left: -3485px;
+    }
 }
 
 #BRCA-Exchange {
