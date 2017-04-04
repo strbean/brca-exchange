@@ -293,9 +293,9 @@ input:focus {
     display: block;
     position: relative;
     /* width of all marquee items, use inspector to adjust this until items do not wrap */
-    width: 11206px;
+    width: 13926px;
     height: 100px;
-    animation: scrollin 60s linear infinite;
+    animation: scrollin 120s linear infinite;
     padding: 5px;
 }
 
@@ -307,7 +307,7 @@ input:focus {
     /* max-width: 200px; */
     /* vertical-align: center */
     float: left;
-    padding-right: 80px;
+    padding-right: 250px;
 }
 .logo-block img {
     /* max-width: 200px; */
@@ -320,7 +320,7 @@ input:focus {
     }
     100% {
         /* half marquee width, minus 5px */
-        left: -5598px;
+        left: -6958px;
     }
 }
 
