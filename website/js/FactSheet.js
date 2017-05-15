@@ -3,7 +3,7 @@
 var React = require('react');
 var PureRenderMixin = require('./PureRenderMixin'); // deep-equals version of PRM
 var {Grid, Col, Row, Alert} = require('react-bootstrap');
-var backend = require('backend');
+var backend = require('./backend');
 
 var FactSheet = React.createClass({
     mixins: [PureRenderMixin],
@@ -22,6 +22,7 @@ var FactSheet = React.createClass({
                     <Col md={8} mdOffset={2}>
                         <h1>BRCA Exchange: Facts & Stats</h1>
                         <br />
+                        <p>Genetic variants in the BRCA1 and BRCA2 genes can reveal if a woman is predisposed to hereditary breast or ovarian cancer. While some BRCA variants have well-understood clinical significance, others require further research. The BRCA Exchange seeks to compile BRCA variation data from around the world to both facilitate this research, and to provide women and their doctors with clear information concerning their BRCA variants.</p>
                         <h3>BRCA Exchange Web Portal</h3>
                         <ul>
                             <li>The BRCA Exchange web portal is the largest public source for information on BRCA1 and BRCA2 variants.</li>
@@ -133,6 +134,18 @@ var FactSheet = React.createClass({
                                 <li><a href="https://genomicsandhealth.org/work-products-demonstration-projects/brca-challenge-0">BRCA Challenge</a></li>
                             </ul>
                         </Alert>
+                        <h3>Acknowledgements</h3>
+    <p>
+The <a href="http://brcaexchange.org">BRCA Exchange</a> website is a product of the <a href="https://genomicsandhealth.org/work-products-demonstration-projects/brca-challenge-0">BRCA Challenge</a> of the <a href="https://genomicsandhealth.org/">Global Alliance for Genomics and Health</a>. The web site and underlying database were developed by Molly Zhang, Charles Markello, Mary Goldman, Brian Craft, Zack Fischmann, Joe Thomas, David Haussler, Melissa Cline and Benedict Paten at the Computational Genomics Lab at the UC Santa Cruz Genomics Institute, Faisal Alquaddoomi and <a href="http://ratschlab.org/~raetsch">Gunnar R&auml;tsch</a> at <a href="https://www.ethz.ch/en.html">Eidgenössische Technische Hochschule Zürich</a>, and Rachel Liao of the  <a href="https://genomicsandhealth.org/">Global Alliance for Genomics and Health</a>  with input and feedback from many members of the <a href="https://genomicsandhealth.org/work-products-demonstration-projects/brca-challenge-0">BRCA Challenge</a> working groups.
+</p>
+<p>
+Variant data on this site are made available using the standards based <a href="https://genomicsandhealth.org/work-products-demonstration-projects/genomics-api">GA4GH Genomics API</a>. For more information, and example usage please visit our <a href="/about/api">API description</a>.
+</p>
+<div style={{display: "inline-block", textAlign: "center" }}>
+    <a href="http://genomicsandhealth.org"><img src={require('./img/ga4gh-logo-more.png')} style={{ width: 240, paddingRight: 6, paddingBottom: 8 }}></img></a>
+    <a href="https://genomics.soe.ucsc.edu"><img src={require('./img/UC-Santa-Cruz-Genomics-Inst_090314.png')} style={{ width: 260, paddingBottom: 8 }}></img></a>
+    <a href="https://www.ethz.ch/en.html"><img src={require('./img/ETHzurich.png')} style={{ width: 240, paddingBottom: 8 }}></img></a>
+</div>
                     </Col>
                 </Row>
             </Grid>
