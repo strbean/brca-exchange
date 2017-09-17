@@ -36,6 +36,7 @@ var content = require('./content');
 var Community = require('./Community');
 var FactSheet = require('./FactSheet');
 var {MailingList} = require('./MailingList');
+var Splicing = require('./Splicing');
 
 var databaseKey = require('../databaseKey');
 
@@ -904,6 +905,10 @@ var VariantDetail = React.createClass({
                             </p>
                         </Col>)
                     }
+                    <Col>
+                        <div>Splicing prototype</div>
+                        <Splicing variant={variant} width={800} height={400} />
+                    </Col>
                 </Row>
 
                 <Row>
