@@ -1,4 +1,3 @@
-
 import subprocess
 import os
 import urllib2
@@ -393,7 +392,7 @@ class DownloadBRCA1BICData(luigi.Task):
     # NOTE: U/P can be found in /hive/groups/cgl/brca/phase1/data/bic/account.txt at UCSC
     date = luigi.DateParameter(default=datetime.date.today())
     u = luigi.Parameter()
-    p = luigi.Parameter()
+    p = luigi.Parameter(significant=False)
 
     resources_dir = luigi.Parameter(default=DEFAULT_BRCA_RESOURCES_DIR,
                                     description='directory to store brca-resources data')
@@ -606,13 +605,14 @@ class ConvertEXLOVDBRCA1ExtractToVCF(luigi.Task):
     def run(self):
         ex_lovd_file_dir = self.file_parent_dir + "/exLOVD"
         brca_resources_dir = self.resources_dir
+        artifacts_dir = create_path_if_nonexistent(self.output_dir + "/release/artifacts/")
 
         os.chdir(lovd_method_dir)
 
         args = ["./lovd2vcf.py", "-i", ex_lovd_file_dir + "/BRCA1.txt", "-o",
                 ex_lovd_file_dir + "/exLOVD_brca1.hg19.vcf", "-a", "exLOVDAnnotation",
                 "-r", brca_resources_dir + "/refseq_annotation.hg19.gp", "-g",
-                brca_resources_dir + "/hg19.fa"]
+                brca_resources_dir + "/hg19.fa", '-e', artifacts_dir + '/exLOVD_BRCA1_error_variants.txt']
         print "Running lovd2vcf with the following args: %s" % (args)
         sp = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         print_subprocess_output_and_error(sp)
@@ -630,11 +630,12 @@ class ConvertEXLOVDBRCA2ExtractToVCF(luigi.Task):
     def run(self):
         ex_lovd_file_dir = self.file_parent_dir + "/exLOVD"
         brca_resources_dir = self.resources_dir
+        artifacts_dir = create_path_if_nonexistent(self.output_dir + "/release/artifacts/")
 
         args = ["./lovd2vcf.py", "-i", ex_lovd_file_dir + "/BRCA2.txt", "-o",
                 ex_lovd_file_dir + "/exLOVD_brca2.hg19.vcf", "-a", "exLOVDAnnotation",
                 "-r", brca_resources_dir + "/refseq_annotation.hg19.gp", "-g",
-                brca_resources_dir + "/hg19.fa"]
+                brca_resources_dir + "/hg19.fa", '-e', artifacts_dir + '/exLOVD_BRCA2_error_variants.txt']
         print "Running lovd2vcf with the following args: %s" % (args)
         sp = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         print_subprocess_output_and_error(sp)
@@ -655,7 +656,7 @@ class ConcatenateEXLOVDVCFFiles(luigi.Task):
         ex_lovd_brca12_hg19_vcf_file = ex_lovd_file_dir + "/exLOVD_brca12.hg19.vcf"
         writable_ex_lovd_brca12_hg19_vcf_file = open(ex_lovd_brca12_hg19_vcf_file, 'w')
         args = ["vcf-concat", ex_lovd_file_dir + "/exLOVD_brca1.hg19.vcf", ex_lovd_file_dir + "/exLOVD_brca2.hg19.vcf"]
-        print "Running lovd2vcf with the following args: %s" % (args)
+        print "Running vcf-concat with the following args: %s" % (args)
         sp = subprocess.Popen(args, stdout=writable_ex_lovd_brca12_hg19_vcf_file, stderr=subprocess.PIPE)
         print_subprocess_output_and_error(sp)
 
@@ -724,7 +725,12 @@ class CopyEXLOVDOutputToOutputDir(luigi.Task):
 ###############################################
 
 
-class ConvertSharedLOVDToVCF(luigi.Task):
+class DownloadLOVDInputFile(luigi.Task):
+    """ Downloads the shared LOVD data
+
+    If the pipeline is run on a machine from which it is not possible to download the data (currently IP based authentication)
+    the file can be manually staged in the path of `lovd_data_file`. In this case, the task will not be run.
+    """
     date = luigi.DateParameter(default=datetime.date.today())
 
     resources_dir = luigi.Parameter(default=DEFAULT_BRCA_RESOURCES_DIR,
@@ -736,25 +742,49 @@ class ConvertSharedLOVDToVCF(luigi.Task):
     file_parent_dir = luigi.Parameter(default=DEFAULT_FILE_PARENT_DIR,
                                       description='directory to store all individual task related files')
 
+    lovd_data_file = luigi.Parameter(default='', description='path, where the shared LOVD data will be stored')
+
+    shared_lovd_data_url = luigi.Parameter(default='https://databases.lovd.nl/shared/export/BRCA',
+                                            description='URL to download shared LOVD data from')
+
     def output(self):
-        lovd_file_dir = self.file_parent_dir + "/LOVD"
-        return luigi.LocalTarget(lovd_file_dir + "/sharedLOVD_brca12.hg19.vcf")
+        if len(str(self.lovd_data_file)) == 0:
+            path = self.file_parent_dir + "/LOVD/BRCA.txt"
+        else:
+            path = str(self.lovd_data_file)
+
+        return luigi.LocalTarget(path)
 
     def run(self):
-        lovd_file_dir = self.file_parent_dir + "/LOVD"
+        create_path_if_nonexistent(os.path.dirname(self.output().path))
+        data = urlopen_with_retry(self.shared_lovd_data_url).read()
+        with open(self.output().path, "wb") as f:
+            f.write(data)
+
+@requires(DownloadLOVDInputFile)
+class ConvertSharedLOVDToVCF(luigi.Task):
+
+    def output(self):
+        return luigi.LocalTarget(self.file_parent_dir + "/LOVD/sharedLOVD_brca12.hg19.vcf")
+
+    def run(self):
+
         brca_resources_dir = self.resources_dir
+        artifacts_dir = create_path_if_nonexistent(self.output_dir + "/release/artifacts")
 
         os.chdir(lovd_method_dir)
 
-        args = ["python", "lovd2vcf.py", "-i", lovd_file_dir + "/BRCA.txt", "-o",
-                lovd_file_dir + "/sharedLOVD_brca12.hg19.vcf", "-a", "sharedLOVDAnnotation",
+        args = ["python", "lovd2vcf.py", "-i", self.input().path, "-o",
+                self.output().path, "-a", "sharedLOVDAnnotation",
                 "-r", brca_resources_dir + "/refseq_annotation.hg19.gp", "-g",
-                brca_resources_dir + "/hg19.fa"]
+                brca_resources_dir + "/hg19.fa", '-e', artifacts_dir + '/LOVD_error_variants.txt']
+
         print "Running lovd2vcf with the following args: %s" % (args)
+
         sp = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         print_subprocess_output_and_error(sp)
 
-        check_file_for_contents(lovd_file_dir + "/sharedLOVD_brca12.hg19.vcf")
+        check_file_for_contents(self.output().path)
 
 
 @requires(ConvertSharedLOVDToVCF)
@@ -904,7 +934,7 @@ class ExtractCHR13BRCAData(luigi.Task):
         writable_chr13_brca2_vcf_file = open(chr13_brca2_vcf_file, "w")
         args = ["tabix", "-h",
                 g1k_file_dir + "/ALL.chr13.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz",
-                "13:32889080-32973809"]
+                "13:32889617-32973809"]
         print "Running tabix with the following args: %s" % (args)
         sp = subprocess.Popen(args, stdout=writable_chr13_brca2_vcf_file, stderr=subprocess.PIPE)
         print_subprocess_output_and_error(sp)
@@ -926,7 +956,7 @@ class ExtractCHR17BRCAData(luigi.Task):
         writable_chr17_brca1_vcf_file = open(chr17_brca1_vcf_file, "w")
         args = ["tabix", "-h",
                 g1k_file_dir + "/ALL.chr17.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz",
-                "17:41191488-41322420"]
+                "17:41196312-41277500"]
         print "Running tabix with the following args: %s" % (args)
         sp = subprocess.Popen(args, stdout=writable_chr17_brca1_vcf_file, stderr=subprocess.PIPE)
         print_subprocess_output_and_error(sp)
@@ -1068,7 +1098,7 @@ class ExtractBRCA1DataFromExac(luigi.Task):
         exac_brca1_hg19_vcf_file = exac_file_dir + "/exac.brca1.hg19.vcf"
         writable_exac_brca1_hg19_vcf_file = open(exac_brca1_hg19_vcf_file, 'w')
 
-        args = ["tabix", "-h", exac_file_dir + "/ExAC_nonTCGA.r0.3.1.sites.vep.vcf.gz", "17:41191488-41322420"]
+        args = ["tabix", "-h", exac_file_dir + "/ExAC_nonTCGA.r0.3.1.sites.vep.vcf.gz", "17:41196312-41277500"]
         print "Running tabix with the following args: %s" % (args)
         sp = subprocess.Popen(args, stdout=writable_exac_brca1_hg19_vcf_file, stderr=subprocess.PIPE)
         print_subprocess_output_and_error(sp)
@@ -1088,7 +1118,7 @@ class ExtractBRCA2DataFromExac(luigi.Task):
         exac_brca2_hg19_vcf_file = exac_file_dir + "/exac.brca2.hg19.vcf"
         writable_exac_brca2_hg19_vcf_file = open(exac_brca2_hg19_vcf_file, 'w')
 
-        args = ["tabix", "-h", exac_file_dir + "/ExAC_nonTCGA.r0.3.1.sites.vep.vcf.gz", "13:32889080-32973809"]
+        args = ["tabix", "-h", exac_file_dir + "/ExAC_nonTCGA.r0.3.1.sites.vep.vcf.gz", "13:32889617-32973809"]
         print "Running tabix with the following args: %s" % (args)
         sp = subprocess.Popen(args, stdout=writable_exac_brca2_hg19_vcf_file, stderr=subprocess.PIPE)
         print_subprocess_output_and_error(sp)
@@ -1176,7 +1206,7 @@ class DownloadLatestEnigmaData(luigi.Task):
     date = luigi.DateParameter(default=datetime.date.today())
 
     synapse_username = luigi.Parameter(description='used to access preprocessed enigma files')
-    synapse_password = luigi.Parameter(description='used to access preprocessed enigma files')
+    synapse_password = luigi.Parameter(description='used to access preprocessed enigma files', significant=False)
     synapse_enigma_file_id = luigi.Parameter(description='file id for combined enigma tsv file')
 
     resources_dir = luigi.Parameter(default=DEFAULT_BRCA_RESOURCES_DIR,
@@ -1451,10 +1481,10 @@ class GenerateReleaseArchive(luigi.Task):
 class RunAll(luigi.WrapperTask):
     date = luigi.DateParameter(default=datetime.date.today())
     u = luigi.Parameter()
-    p = luigi.Parameter()
+    p = luigi.Parameter(significant=False)
 
     synapse_username = luigi.Parameter(description='used to access preprocessed enigma files')
-    synapse_password = luigi.Parameter(description='used to access preprocessed enigma files')
+    synapse_password = luigi.Parameter(description='used to access preprocessed enigma files', significant=False)
     synapse_enigma_file_id = luigi.Parameter(description='file id for combined enigma tsv file')
 
     resources_dir = luigi.Parameter(default=DEFAULT_BRCA_RESOURCES_DIR,
@@ -1496,7 +1526,7 @@ class RunAll(luigi.WrapperTask):
         yield CopyG1KOutputToOutputDir(self.date, self.resources_dir, self.output_dir, self.file_parent_dir)
         yield CopyEXACOutputToOutputDir(self.date, self.resources_dir, self.output_dir, self.file_parent_dir)
         yield CopyEXLOVDOutputToOutputDir(self.date, self.resources_dir, self.output_dir, self.file_parent_dir)
-        yield CopySharedLOVDOutputToOutputDir(self.date, self.resources_dir, self.output_dir, self.file_parent_dir)
-        yield DownloadLatestEnigmaData(self.date, self.synapse_username, self.synapse_password,
-                                       self.synapse_enigma_file_id, self.resources_dir,
+        yield CopySharedLOVDOutputToOutputDir(date=self.date, resources_dir=self.resources_dir, output_dir=self.output_dir, file_parent_dir=self.file_parent_dir)
+
+        yield DownloadLatestEnigmaData(self.date, self.synapse_username, self.synapse_password, self.synapse_enigma_file_id, self.resources_dir,
                                        self.output_dir, self.file_parent_dir)
