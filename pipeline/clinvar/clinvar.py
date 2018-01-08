@@ -16,10 +16,10 @@ def textIfPresent(element, field):
     """Return the text associated with a field under the element, or
     None if the field is not present"""
     ff = element.find(field)
-    if ff == None:
+    if ff == None or ff.text == None:
         return None
     else:
-        return(ff.text)
+        return(ff.text.encode('utf-8'))
 
 class genomicCoordinates:
     """Contains the genomic information on the variant"""
@@ -38,12 +38,18 @@ class genomicCoordinates:
         else:
             self.element = element
             self.chrom = element.get("Chr")
-            self.start = element.get("start")
             self.stop = element.get("stop")
             self.length = element.get("variantLength")
+            self.start = element.get("start")
             self.referenceAllele = element.get("referenceAllele")
             self.alternateAllele = element.get("alternateAllele")
 
+            """If standard ref/alt values are not provided, use the VCF values and the
+            associated VCF position."""
+            if self.referenceAllele == None and self.alternateAllele == None:
+                self.start = element.get("positionVCF")
+                self.referenceAllele = element.get("referenceAlleleVCF")
+                self.alternateAllele = element.get("alternateAlleleVCF")
 
 
 class variant:
@@ -171,6 +177,7 @@ class clinVarAssertion:
             self.dateLastUpdated = cs.get("DateLastEvaluated")
             self.clinicalSignificance = textIfPresent(cs, "Description")
             self.reviewStatus = textIfPresent(cs, "ReviewStatus")
+            self.summaryEvidence = textIfPresent(cs, "Comment")
                  
 
 class clinVarSet:
@@ -194,7 +201,3 @@ class clinVarSet:
                 cva = clinVarAssertion(item)
                 accession = cva.accession
                 self.otherAssertions[accession] = cva
-
-            
-
-        

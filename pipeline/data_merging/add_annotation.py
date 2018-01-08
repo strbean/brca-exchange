@@ -1,5 +1,7 @@
 #!/usr/bin/env python
-"""add VEP result to merged data"""
+"""
+Purpose: Add VEP result to merged data
+"""
 import argparse
 import csv
 import json
@@ -8,6 +10,7 @@ import re
 import requests
 import sys
 import logging
+import time
 
 # Here are the canonical BRCA transcripts in ENSEMBL nomenclature
 BRCA1_CANONICAL = "ENST00000357654"
@@ -20,14 +23,18 @@ VEP_TRANSCRIPT_CONSEQUENCES = {
     "Polyphen_Prediction": "polyphen_prediction"
 }
 
+# Number of variants rejected by Ensembl
+ERROR_COUNT = 0
+
 
 def main():
+    global ERROR_COUNT
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", "--input",
                         default="/hive/groups/cgl/brca/release1.0/merged.tsv")
     parser.add_argument("-o", "--output",
                         default="/hive/groups/cgl/brca/release1.0/merged_withVEP_cleaned.tsv")
-    parser.add_argument('-a', "--artifacts_dir", help='Artifacts directory with pipeline artifact files.')
+    parser.add_argument('-l', "--log_file_path", help='Location of log file.')
     parser.add_argument("-v", "--verbose", action="count", default=False, help="determines logging")
     args = parser.parse_args()
 
@@ -36,7 +43,7 @@ def main():
     else:
         logging_level = logging.CRITICAL
 
-    log_file_path = args.artifacts_dir + "add-annotation.log"
+    log_file_path = args.log_file_path
     logging.basicConfig(filename=log_file_path, filemode="w", level=logging_level)
 
     csvIn = csv.DictReader(open(args.input, "r"), delimiter='\t')
@@ -44,13 +51,14 @@ def main():
     csvOut = csv.DictWriter(open(args.output, "w"), delimiter='\t',
                             fieldnames=outputColumns)
     csvOut.writerow(dict((fn, fn) for fn in outputColumns))
-    rowCount = 0
     for row in csvIn:
-        rowCount += 1
         row = addVepResults(row, VEP_TRANSCRIPT_CONSEQUENCES)
-        logging.info("Completed addVepResults.")
-        csvOut.writerow(row)
-        logging.info("Completed writerow.")
+        if row is not False:
+            csvOut.writerow(row)
+        else:
+            ERROR_COUNT += 1
+
+    logging.info("ERROR COUNT: %d", ERROR_COUNT)
 
 
 def setOutputColumns(fields, toAdd):
@@ -60,6 +68,21 @@ def setOutputColumns(fields, toAdd):
     for item in toAdd:
         newFields.append(item)
     return(newFields)
+
+def _make_request(url):
+    req = requests.get(url, headers={"Content-Type": "application/json"})
+
+    if req.status_code == 429 and 'Retry-After' in req.headers:
+        retry = float(req.headers['Retry-After'])
+        logging.info("Got rate limited by REST API. Going to retry in {}s.".format(retry))
+        time.sleep(retry)
+        return _make_request(url)
+                
+    if not req.ok:    
+        req.raise_for_status()
+        sys.exit()
+    
+    return req.json()
 
 
 def addVepResults(row, vepTranscriptConsequenceFields):
@@ -78,16 +101,13 @@ def addVepResults(row, vepTranscriptConsequenceFields):
         ext = "/vep/human/hgvs/"
         hgvs = "%s:g.%s:%s>%s?" % (row["Chr"], row["Pos"],
                                    row["Ref"], row["Alt"])
-        req = requests.get(server+ext+hgvs,
-                           headers={"Content-Type": "application/json"})
-        if not req.ok:
-            req.raise_for_status()
-            sys.exit()
-        jsonOutput = req.json()
-        assert(len(jsonOutput) == 1)
-        assert(jsonOutput[0].has_key("transcript_consequences"))
+        
+        req_url = server+ext+hgvs
+        jsonOutput = _make_request(req_url)
+        if len(jsonOutput) != 1 or not jsonOutput[0].has_key("transcript_consequences"):
+            logging.debug("Error obtaining vep results for:\n %s \n From row: \n %s \n Response from ensembl:\n %s \n", hgvs, row, jsonOutput)
+            return False
         correctEntry = None
-        logging.info("Completed request and passed assertions.")
         for entryThisGene in jsonOutput[0]["transcript_consequences"]:
             if entryThisGene.has_key("transcript_id"):
                 if re.search(BRCA1_CANONICAL, entryThisGene["transcript_id"]):

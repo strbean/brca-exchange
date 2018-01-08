@@ -135,7 +135,6 @@ var Home = React.createClass({
             showModal: false
         };
     },
-
     onSearch(value) {
         this.transitionTo('/variants', null, {search: value});
     },
@@ -731,12 +730,14 @@ var VariantDetail = React.createClass({
     },
     generateLinkToGenomeBrowser: function (prop, variant) {
         let hgVal = (prop === "Genomic_Coordinate_hg38") ? '38' : '19';
-        let genomicCoordinateElements = variant[prop].split(':');
-        let chr = genomicCoordinateElements[0];
+        let genomicCoordinate = variant[prop];
+        let genomicCoordinateElements = genomicCoordinate.split(':');
+        let ref = genomicCoordinateElements[2].split('>')[0];
         let position = parseInt(genomicCoordinateElements[1].split('.')[1]);
         let positionRangeStart = position - 1;
-        let positionRangeEnd = position + 1;
-        let genomeBrowserUrl = 'http://genome.ucsc.edu/cgi-bin/hgTracks?db=hg' + hgVal + '&position=' + chr + ':' + positionRangeStart + '-' + positionRangeEnd + '&hubUrl=http://brcaexchange.org/trackhubs/hub.txt';
+        let positionRangeEnd = position + ref.length + 1;
+        let positionParameter = (genomicCoordinate.length > 1500) ? positionRangeStart + '-' + positionRangeEnd : genomicCoordinate;
+        let genomeBrowserUrl = 'http://genome.ucsc.edu/cgi-bin/hgTracks?db=hg' + hgVal + '&position=' + positionParameter + '&hubUrl=http://brcaexchange.org/trackhubs/hub.txt';
         return <a target="_blank" href={genomeBrowserUrl}>{variant[prop]}</a>;
     },
     render: function () {
@@ -786,10 +787,26 @@ var VariantDetail = React.createClass({
                     title = "Abbreviated AA Change";
                 }
 
+                // get allele frequency chart components if they're available
                 if (rowDescriptor.replace) {
                     rowItem = rowDescriptor.replace(variant, prop);
+
+                    // frequency charts are not displayed if they're empty
                     if (rowItem === false) {
                         return false;
+                    }
+
+                    // don't insert rows for empty charts, but count them as empty rows
+                    if (prop === 'Allele_Frequency_Charts_1000_Genomes') {
+                        if (!variant['Variant_in_1000_Genomes']) { // eslint-disable-line dot-notation
+                            rowsEmpty += 1;
+                            return false;
+                        }
+                    } else if (prop === 'Allele_Frequency_Charts_ExAC') {
+                        if (!variant['Variant_in_ExAC']) {
+                            rowsEmpty += 1;
+                            return false;
+                        }
                     }
                 } else if (variant[prop] !== null) {
                     if (prop === "Gene_Symbol") {
@@ -851,7 +868,17 @@ var VariantDetail = React.createClass({
                     rowItem = variant["HGVS_Protein"].split(":")[0];
                 }
 
-                const isEmptyValue = rowDescriptor.replace ? rowItem === false : util.isEmptyField(variant[prop]);
+                let isEmptyValue = rowDescriptor.replace ? rowItem === false : util.isEmptyField(variant[prop]);
+
+                if (title === "Beacons") {
+                    if (variant.Ref.length > 1 || variant.Alt.length > 1) {
+                        isEmptyValue = true;
+                    } else {
+                        let websiteUrl = `https://beacon-network.org/#/search?chrom=${variant.Chr}&pos=${variant.Hg37_Start}&ref=${variant.Ref}&allele=${variant.Alt}&rs=GRCh37`;
+                        rowItem = <a target="_blank" href={websiteUrl}>{websiteUrl}</a>;
+                        isEmptyValue = false;
+                    }
+                }
 
                 if (isEmptyValue) {
                     rowsEmpty += 1;
@@ -859,7 +886,6 @@ var VariantDetail = React.createClass({
                 }
 
                 totalRowsEmpty += rowsEmpty;
-
                 return (
                     <tr key={prop} className={ (isEmptyValue && this.state.hideEmptyItems) ? "variantfield-empty" : "" }>
                         { rowDescriptor.tableKey !== false &&
@@ -1016,6 +1042,15 @@ var Application = React.createClass({
             mode: (localStorage.getItem("research-mode") === 'true') ? 'research_mode' : 'default',
         };
     },
+    componentDidUpdate() {
+        let localStorageMode = (localStorage.getItem("research-mode") === "true") ? "research_mode" : "default";
+        if (localStorageMode !== this.state.mode) {
+            this.setMode();
+        }
+    },
+    setMode: function () {
+        this.setState({mode: (localStorage.getItem("research-mode") === 'true') ? 'research_mode' : 'default'});
+    },
     toggleMode: function () {
         if (this.state.mode === 'research_mode') {
             localStorage.setItem('research-mode', false);
@@ -1029,7 +1064,7 @@ var Application = React.createClass({
         var path = this.getPath().slice(1);
         return (
             <div>
-                <NavBarNew path={path} mode={this.state.mode} />
+                <NavBarNew path={path} mode={this.state.mode}/>
                 <RouteHandler toggleMode={this.onChildToggleMode} mode={this.state.mode} />
                 <Database
                     mode={this.state.mode}
